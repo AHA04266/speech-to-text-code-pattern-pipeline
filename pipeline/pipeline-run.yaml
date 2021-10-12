@@ -3,6 +3,7 @@ kind: PipelineRun
 metadata:
   generateName: aha04266-app-pipeline-run-
 spec:
+  serviceAccountName: build-bot
   pipelineRef:
     name: aha04266-app-pipeline
   workspaces:
