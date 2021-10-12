@@ -1,0 +1,61 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  annotations:
+    app.openshift.io/runtime: nodejs
+  name: aha04266-app-pipeline
+spec:
+  workspaces:
+    - name: aha04266-app-pipeline-shared-data
+  params:
+    - name: image-repo
+      type: string
+      description: Docker image name
+      default: quay.io/aha04266_ibm/stt-app
+  tasks:
+    - name: clone-repository
+      params:
+        - name: url
+          value: https://github.com/AHA04266/speech-to-text-code-pattern.git
+      taskRef:
+        kind: Task
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: aha04266-app-pipeline-shared-data
+    - name: install-dependencies
+      taskRef:
+        name: npm
+      workspaces:
+        - name: source
+          workspace: aha04266-app-pipeline-shared-data
+      params:
+        - name: ARGS
+          value:
+            - clean-install
+      runAfter:
+        - clone-repository
+    - name: run-tests
+      taskRef:
+        name: npm
+      workspaces:
+        - name: source
+          workspace: aha04266-app-pipeline-shared-data
+      params:
+        - name: ARGS
+          value:
+            - test
+      runAfter:
+        - install-dependencies
+    - name: build-image
+      runAfter:
+        - run-tests
+      params:
+        - name: IMAGE
+          value: "$(params.image-repo):$(tasks.clone-repository.results.commit)"
+      taskRef:
+        kind: Task
+        name: buildah
+      workspaces:
+        - name: source
+          workspace: aha04266-app-pipeline-shared-data

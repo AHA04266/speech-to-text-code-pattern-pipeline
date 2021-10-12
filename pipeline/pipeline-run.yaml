@@ -1,0 +1,11 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  generateName: aha04266-app-pipeline-run-
+spec:
+  pipelineRef:
+    name: aha04266-app-pipeline
+  workspaces:
+    - name: aha04266-app-pipeline-shared-data
+      persistentVolumeClaim:
+        claimName: aha04266-app-pvc
