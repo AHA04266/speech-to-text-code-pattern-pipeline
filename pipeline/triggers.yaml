@@ -1,0 +1,109 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tekton-triggers-sa
+
+---
+  
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tekton-triggers-role
+  namespace: aha04266-app
+rules:
+  - apiGroups:
+      - tekton.dev
+      - triggers.tekton.dev
+    resources:
+      - triggers
+      - eventlisteners
+      - triggerbindings
+      - triggertemplates
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - tekton.dev
+      - triggers.tekton.dev
+    resources:
+      - triggers
+      - pipelineruns
+      - pipelineresources
+    verbs:
+      - get
+      - create
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tekton-triggers-rolebinding
+subjects:
+  - kind: ServiceAccount
+    name: tekton-triggers-sa
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tekton-triggers-role
+
+---
+
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: aha04266-app-triggertemplate
+spec:
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: aha04266-app-pipeline-run-
+      spec:
+        serviceAccountName: build-bot
+        pipelineRef:
+          name: aha04266-app-pipeline
+        workspaces:
+          - name: aha04266-app-pipeline-shared-data
+            persistentVolumeClaim:
+              claimName: aha04266-app-pvc
+
+---
+
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: aha04266-app-triggerbinding
+spec:
+  params:
+    - name: namespace
+      value: aha04266-app
+    - name: gitrepositoryurl
+      value: $(body.repository.url)
+    - name: gitrepositoryname
+      value: $(body.repository.name)
+
+---
+
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: aha04266-app-eventlister
+spec:
+  serviceAccountName: tekton-triggers-sa
+  triggers:
+    - bindings:
+        - ref: aha04266-app-triggerbinding
+      template:
+        name: aha04266-app-triggertemplate

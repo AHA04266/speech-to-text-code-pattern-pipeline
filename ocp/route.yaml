@@ -5,11 +5,13 @@ metadata:
     argocd.argoproj.io/sync-options: Validate=false
     openshift.io/host.generated: "true"
   name: aha04266-app-route
+#  name: aha04266-app-el-route
 spec:
   tls:
     termination: edge
   to:
     kind: Service
     name: aha04266-stt-app
+#   name: el-aha04266-app-eventlister
     weight: 100
   wildcardPolicy: None
